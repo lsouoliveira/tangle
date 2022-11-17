@@ -2,7 +2,7 @@ import pytest
 from typing import cast
 from tangle.parser import (
     AstNodeType,
-    BinaryOperatorNode,
+    UnaryOperatorNode,
     CodeBlockNode,
     DocumentNode,
     StringParser,
@@ -15,9 +15,9 @@ def test_document_node():
 
 
 def test_binary_operator_node():
-    node = BinaryOperatorNode(">", TextNode(), TextNode("path")).node_type()
+    node = UnaryOperatorNode(">", TextNode()).node_type()
 
-    assert node == AstNodeType.BINARY_OPERATOR_NODE
+    assert node == AstNodeType.UNARY_OPERATOR_NODE
 
 
 def test_text_node():
@@ -26,7 +26,7 @@ def test_text_node():
 
 def test_code_block_node():
     node = CodeBlockNode(
-        TextNode(), TextNode(), BinaryOperatorNode(">", TextNode(), TextNode())
+        TextNode(), TextNode(), UnaryOperatorNode(">", TextNode())
     ).node_type()
 
     assert node == AstNodeType.CODE_BLOCK
@@ -72,16 +72,14 @@ class TestStringParser:
         block_info_text = cast(TextNode, code_block.info)
         block_content = cast(TextNode, code_block.content)
 
-        block_operator = cast(BinaryOperatorNode, code_block.operator)
-        block_operator_operand_1 = cast(TextNode, block_operator.operand1)
-        block_operator_operand_2 = cast(TextNode, block_operator.operand2)
+        block_operator = cast(UnaryOperatorNode, code_block.operator)
+        block_operator_operand = cast(TextNode, block_operator.operand)
 
         assert code_block.node_type() == AstNodeType.CODE_BLOCK
         assert block_info_text.content == "ruby"
         assert block_content.content == ruby_class
 
-        assert block_operator_operand_1.content == "ruby"
-        assert block_operator_operand_2.content == "~/animal.rb"
+        assert block_operator_operand.content == "~/animal.rb"
 
     def test_parser_parse_code_block_without_info_string(
         self, document_with_code_block_without_info_string, ruby_class
@@ -96,16 +94,14 @@ class TestStringParser:
         block_info_text = cast(TextNode, code_block.info)
         block_content = cast(TextNode, code_block.content)
 
-        block_operator = cast(BinaryOperatorNode, code_block.operator)
-        block_operator_operand_1 = cast(TextNode, block_operator.operand1)
-        block_operator_operand_2 = cast(TextNode, block_operator.operand2)
+        block_operator = cast(UnaryOperatorNode, code_block.operator)
+        block_operator_operand = cast(TextNode, block_operator.operand)
 
         assert code_block.node_type() == AstNodeType.CODE_BLOCK
         assert block_info_text.content == ""
         assert block_content.content == ruby_class
 
-        assert block_operator_operand_1.content == ""
-        assert block_operator_operand_2.content == "~/animal.rb"
+        assert block_operator_operand.content == "~/animal.rb"
 
     def test_parser_doesnt_parse_with_missing_params(
         self, documents_with_missing_params

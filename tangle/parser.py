@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import List, Tuple, cast
+from typing import List, Text, Tuple, cast
 import abc
 import re
 
@@ -30,7 +30,7 @@ def split_code_block_header_components(
 class AstNodeType(Enum):
     DOCUMENT = auto()
     CODE_BLOCK = auto()
-    BINARY_OPERATOR_NODE = auto()
+    UNARY_OPERATOR_NODE = auto()
     TEXT_NODE = auto()
 
 
@@ -62,17 +62,15 @@ class DocumentNode(AstNode):
         return len(self._blocks)
 
 
-class BinaryOperatorNode(AstNode):
+class UnaryOperatorNode(AstNode):
     operator: str
-    operand1: AstNode
     operand2: AstNode
 
-    def __init__(self, operator: str, operand1: AstNode, operand2: AstNode):
-        super().__init__(AstNodeType.BINARY_OPERATOR_NODE)
+    def __init__(self, operator: str, operand: AstNode):
+        super().__init__(AstNodeType.UNARY_OPERATOR_NODE)
 
         self.operator = operator
-        self.operand1 = operand1
-        self.operand2 = operand2
+        self.operand = operand
 
 
 class TextNode(AstNode):
@@ -87,9 +85,9 @@ class TextNode(AstNode):
 class CodeBlockNode(AstNode):
     info: TextNode
     content: TextNode
-    operator: BinaryOperatorNode
+    operator: UnaryOperatorNode
 
-    def __init__(self, info: TextNode, content: TextNode, operator: BinaryOperatorNode):
+    def __init__(self, info: TextNode, content: TextNode, operator: UnaryOperatorNode):
         super().__init__(AstNodeType.CODE_BLOCK)
 
         self.info = info
@@ -113,27 +111,21 @@ class StringParser(abc.ABC):
             "(```.*?\n[.*?\n]?```$)", flags=re.DOTALL | re.MULTILINE
         )
 
-    def __parse_binary_operator(self, source) -> BinaryOperatorNode | None:
-        info, operator, path = split_code_block_header_components(source)
+    def __parse_code_block(self, source: str) -> CodeBlockNode | None:
+        lines = source.splitlines()
+        header = lines[0][3:]
+
+        info, operator, path = split_code_block_header_components(header)
+
+        content = "\n".join(lines[1:-1])
 
         if not operator or not path:
             return None
 
-        return BinaryOperatorNode(operator, TextNode(info or ""), TextNode(path))
-
-    def __parse_code_block(self, source: str) -> CodeBlockNode | None:
-        lines = source.splitlines()
-
-        binary_operator_node = self.__parse_binary_operator(lines[0][3:])
-        content = "\n".join(lines[1:-1])
-
-        if not binary_operator_node:
-            return None
-
         return CodeBlockNode(
-            cast(TextNode, binary_operator_node.operand1),
+            TextNode(info or ""),
             TextNode(content),
-            binary_operator_node,
+            UnaryOperatorNode(operator, TextNode(path)),
         )
 
     def __code_block_matches(self):
