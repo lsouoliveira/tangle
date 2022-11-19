@@ -76,10 +76,10 @@ class TestStringParser:
         block_operator_operand = cast(TextNode, block_operator.operand)
 
         assert code_block.node_type() == AstNodeType.CODE_BLOCK
-        assert block_info_text.content == "ruby"
-        assert block_content.content == ruby_class
+        assert block_info_text.value == "ruby"
+        assert block_content.value == ruby_class
 
-        assert block_operator_operand.content == "~/animal.rb"
+        assert block_operator_operand.value == "~/animal.rb"
 
     def test_parser_parse_code_block_without_info_string(
         self, document_with_code_block_without_info_string, ruby_class
@@ -98,10 +98,10 @@ class TestStringParser:
         block_operator_operand = cast(TextNode, block_operator.operand)
 
         assert code_block.node_type() == AstNodeType.CODE_BLOCK
-        assert block_info_text.content == ""
-        assert block_content.content == ruby_class
+        assert block_info_text.value == ""
+        assert block_content.value == ruby_class
 
-        assert block_operator_operand.content == "~/animal.rb"
+        assert block_operator_operand.value == "~/animal.rb"
 
     def test_parser_doesnt_parse_with_missing_params(
         self, documents_with_missing_params

@@ -43,14 +43,18 @@ class AstNode:
     def node_type(self):
         return self._node_type
 
+    @abc.abstractmethod
+    def accept(self, visitor) -> None:
+        raise NotImplementedError
+
 
 class DocumentNode(AstNode):
     _blocks: List[AstNode]
 
-    def __init__(self):
+    def __init__(self, blocks: List[AstNode] | None = None):
         super().__init__(AstNodeType.DOCUMENT)
 
-        self._blocks = []
+        self._blocks = blocks or []
 
     def add(self, node: AstNode) -> None:
         self._blocks.append(node)
@@ -61,10 +65,13 @@ class DocumentNode(AstNode):
     def count(self) -> int:
         return len(self._blocks)
 
+    def accept(self, visitor) -> None:
+        visitor.visit_document(self)
+
 
 class UnaryOperatorNode(AstNode):
     operator: str
-    operand2: AstNode
+    operand: AstNode
 
     def __init__(self, operator: str, operand: AstNode):
         super().__init__(AstNodeType.UNARY_OPERATOR_NODE)
@@ -72,14 +79,20 @@ class UnaryOperatorNode(AstNode):
         self.operator = operator
         self.operand = operand
 
+    def accept(self, visitor) -> None:
+        visitor.visit_unary_operator(self)
+
 
 class TextNode(AstNode):
-    content: str
+    value: str
 
-    def __init__(self, content=""):
+    def __init__(self, value=""):
         super().__init__(AstNodeType.TEXT_NODE)
 
-        self.content = content
+        self.value = value
+
+    def accept(self, visitor) -> None:
+        visitor.visit_text(self)
 
 
 class CodeBlockNode(AstNode):
@@ -94,6 +107,9 @@ class CodeBlockNode(AstNode):
         self.content = content
         self.operator = operator
 
+    def accept(self, visitor) -> None:
+        visitor.visit_code_block(self)
+
 
 class Parser(abc.ABC):
     @abc.abstractmethod
@@ -101,7 +117,7 @@ class Parser(abc.ABC):
         raise NotImplementedError
 
 
-class StringParser(abc.ABC):
+class StringParser(Parser):
     _source: str
     _code_block_pattern: re.Pattern
 
@@ -141,3 +157,21 @@ class StringParser(abc.ABC):
                 document.add(block)
 
         return document
+
+
+class Visitor(abc.ABC):
+    @abc.abstractmethod
+    def visit_document(self, document: DocumentNode) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def visit_code_block(self, code_block: CodeBlockNode) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def visit_unary_operator(self, unary_operator: UnaryOperatorNode) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def visit_text(self, text: TextNode) -> None:
+        raise NotImplementedError
