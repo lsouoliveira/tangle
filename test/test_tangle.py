@@ -27,7 +27,7 @@ def test_write_to_file():
             with patch("os.makedirs") as makedir:
                 write_to_file("content", path)
 
-                m.assert_called_with(path, "w")
+                m.assert_called_with(path, "w+")
                 makedir.assert_called_with(dirname)
 
 
@@ -61,7 +61,7 @@ class TestEvalVisitor:
         with patch("builtins.open", new_callable=mock_open()) as m:
             document.get(0).accept(visitor)
 
-            m.assert_called_with("~/randomfile.txt", "w")
+            m.assert_called_with("~/randomfile.txt", "w+")
 
 
 class TestFilePath:

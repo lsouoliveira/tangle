@@ -18,7 +18,7 @@ def write_to_file(content: str, file_path: str) -> None:
     if not fpath.file_or_dir_exists():
         os.makedirs(fpath.dirname())
 
-    with open(file_path, "w") as f:
+    with open(fpath.expanded(), "w+") as f:
         f.write(content)
 
 
