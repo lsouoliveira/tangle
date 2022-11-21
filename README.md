@@ -18,30 +18,4 @@ tangle <file>
 
 ## Example
 
-`dotfiles.md`:
-
-```markdown
-# Dotfiles
-
-## Bash config
-
-```bash > ~/.bashrc 
-if [ -d "$HOME/bin" ] ; then
-    PATH="$HOME/bin:$PATH"
-fi
-```
-```
-
-command line:
-
-```bash
-tangle bash.md
-```
-
-~/.bashrc:
-
-```
-if [ -d "$HOME/bin" ] ; then
-    PATH="$HOME/bin:$PATH"
-fi
-```
+TODO
