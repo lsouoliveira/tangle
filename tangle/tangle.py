@@ -1,6 +1,5 @@
 import abc
 import os
-from sys import argv
 from typing import cast
 
 from tangle.parser import (

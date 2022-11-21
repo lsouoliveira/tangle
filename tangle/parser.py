@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import List, Text, Tuple, cast
+from typing import List, Tuple
 import abc
 import re
 
