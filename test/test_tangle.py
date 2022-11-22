@@ -19,8 +19,8 @@ from tangle.tangle import (
 
 
 def test_write_to_file():
-    path = "~/randomfile.txt"
-    dirname = os.path.dirname(os.path.expanduser(path))
+    path = os.path.expanduser("~/randomfile.txt")
+    dirname = os.path.dirname(path)
 
     with patch("builtins.open", new_callable=mock_open()) as m:
         with patch("os.path.exists", return_value=False):
@@ -61,7 +61,7 @@ class TestEvalVisitor:
         with patch("builtins.open", new_callable=mock_open()) as m:
             document.get(0).accept(visitor)
 
-            m.assert_called_with("~/randomfile.txt", "w+")
+            m.assert_called_with(os.path.expanduser("~/randomfile.txt"), "w+")
 
 
 class TestFilePath:
