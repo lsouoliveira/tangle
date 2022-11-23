@@ -24,9 +24,7 @@ tangle <file>
 
 A example markdown file named `example.md` using the `tangle` syntax:
 
-```ruby > hello_world.rb
-puts "hello, world!"
-```
+![image](https://user-images.githubusercontent.com/30642647/203586964-dc892e05-7cdc-4d0a-a0ab-b5577fd7344c.png)
 
 It could be tangle running the following command:
 
@@ -34,7 +32,7 @@ It could be tangle running the following command:
 tangle example.md
 ```
 
-The resulting file would be `hello_world.rb` with the content below:
+A `hello_world.rb` file would be created at `~/` with the content below:
 
 ```ruby
 puts "hello, world!"
