@@ -10,6 +10,10 @@ A tool for exporting markdown code blocks to files.
 
 Clone the repository, and use `pip` to install the project as a python package.
 
+```bash
+pip3 install .
+```
+
 ## Usage
 
 ```bash
@@ -18,4 +22,4 @@ tangle <file>
 
 ## Example
 
-TODO
+A example markdown file to tangle would be the following:
