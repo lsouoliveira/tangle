@@ -19,9 +19,6 @@ def create_args_parser():
 class Cli:
     _args: argparse.Namespace
 
-    def __init__(self):
-        self._parse_args()
-
     def _eval_file(self) -> None:
         interpreter = FileInterpreter(self._args.file)
 
@@ -33,4 +30,5 @@ class Cli:
         self._args = args_parser.parse_args()
 
     def run(self) -> None:
+        self._parse_args()
         self._eval_file()

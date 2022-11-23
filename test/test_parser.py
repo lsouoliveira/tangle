@@ -51,7 +51,7 @@ class TestStringParser:
 
     @pytest.fixture
     def ruby_class(self):
-        return "class Animal\nend"
+        return "class Animal\nend\n"
 
     def test_parser_returns_empty_document(self):
         parser = StringParser("")

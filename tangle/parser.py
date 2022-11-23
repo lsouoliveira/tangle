@@ -133,7 +133,7 @@ class StringParser(Parser):
 
         info, operator, path = split_code_block_header_components(header)
 
-        content = "\n".join(lines[1:-1])
+        content = "\n".join(lines[1:-1]) + "\n"
 
         if not operator or not path:
             return None
