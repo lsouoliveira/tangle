@@ -22,4 +22,20 @@ tangle <file>
 
 ## Example
 
-A example markdown file to tangle would be the following:
+A example markdown file named `example.md` using the `tangle` syntax:
+
+```ruby > hello_world.rb
+puts "hello, world!"
+```
+
+It could be tangle running the following command:
+
+```bash
+tangle example.md
+```
+
+The resulting file would be `hello_world.rb` with the content below:
+
+```ruby
+puts "hello, world!"
+```
