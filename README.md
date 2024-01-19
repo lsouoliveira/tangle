@@ -1,4 +1,5 @@
 # Tangle
+[![Python package](https://github.com/lsouoliveira/tangle/actions/workflows/test.yml/badge.svg)](https://github.com/lsouoliveira/tangle/actions/workflows/test.yml)
 
 A tool for exporting markdown code blocks to files.
 
