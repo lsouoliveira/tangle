@@ -37,3 +37,8 @@ A `hello_world.rb` file would be created at `~/` with the content below:
 ```ruby
 puts "hello, world!"
 ```
+
+## Changelog
+
+### 1.1.0
+- Add support for recursive tangle markdown files linked in the document
