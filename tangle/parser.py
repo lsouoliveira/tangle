@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import Enum, auto
 from typing import List, Tuple
 import abc
@@ -30,7 +32,9 @@ def split_code_block_header_components(
 class AstNodeType(Enum):
     DOCUMENT = auto()
     CODE_BLOCK = auto()
+    LINK_NODE = auto()
     UNARY_OPERATOR_NODE = auto()
+    LINK = auto()
     TEXT_NODE = auto()
 
 
@@ -48,13 +52,26 @@ class AstNode:
         raise NotImplementedError
 
 
+class LinkNode(AstNode):
+    text: TextNode
+    path: TextNode
+
+    def __init__(self, text: TextNode, path: TextNode):
+        super().__init__(AstNodeType.LINK)
+
+        self.text = text
+        self.path = path
+
+
 class DocumentNode(AstNode):
+    links: List[LinkNode]
     _blocks: List[AstNode]
 
-    def __init__(self, blocks: List[AstNode] | None = None):
+    def __init__(self, blocks: List[AstNode] | None = None, links: List[LinkNode] = []):
         super().__init__(AstNodeType.DOCUMENT)
 
         self._blocks = blocks or []
+        self.links = links or []
 
     def add(self, node: AstNode) -> None:
         self._blocks.append(node)
@@ -126,6 +143,9 @@ class StringParser(Parser):
         self._code_block_pattern = re.compile(
             "(```.*?\n[.*?\n]?```$)", flags=re.DOTALL | re.MULTILINE
         )
+        self._link_pattern = re.compile(
+            r"\[([^\]]+)\]\(([^\)]+)\)", flags=re.DOTALL | re.MULTILINE
+        )
 
     def __parse_code_block(self, source: str) -> CodeBlockNode | None:
         lines = source.splitlines()
@@ -144,8 +164,16 @@ class StringParser(Parser):
             UnaryOperatorNode(operator, TextNode(path)),
         )
 
+    def __parse_link(self, match: Tuple) -> LinkNode | None:
+        name, path = match
+
+        return LinkNode(TextNode(name), TextNode(path))
+
     def __code_block_matches(self):
         return self._code_block_pattern.findall(self._source)
+
+    def __link_matches(self):
+        return self._link_pattern.findall(self._source)
 
     def parse(self) -> DocumentNode:
         document = DocumentNode()
@@ -155,6 +183,12 @@ class StringParser(Parser):
 
             if block:
                 document.add(block)
+
+        for match in self.__link_matches():
+            link_node = self.__parse_link(match)
+
+            if link_node:
+                document.links.append(link_node)
 
         return document
 

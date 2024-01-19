@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import os
 from typing import cast
@@ -47,6 +49,26 @@ class CopyToFileCommand(Command):
         return self._code_block.content.value
 
 
+class InterpretFileCommand(Command):
+    file_path: FilePath
+
+    def __init__(self, file_path: str):
+        self.file_path = FilePath(file_path)
+
+    def execute(self) -> None:
+        if not self.file_path.file_or_dir_exists():
+            return
+
+        if not self.file_path.isfile():
+            return
+
+        if not self.file_path.extension() == "md":
+            return
+
+        interpreter = FileInterpreter(self.file_path.expanded())
+        interpreter.eval()
+
+
 class FilePath:
     _path: str
 
@@ -65,11 +87,25 @@ class FilePath:
 
         return os.path.exists(self._path) or dir_exists
 
+    def isdir(self) -> bool:
+        return os.path.isdir(self.expanded())
+
+    def isfile(self) -> bool:
+        return os.path.isfile(self.expanded())
+
     def expanded(self) -> str:
         return os.path.expanduser(self._path)
 
     def dirname(self) -> str:
         return os.path.dirname(self.expanded())
+
+    def extension(self) -> str:
+        components = self._path.split(".")
+
+        if len(components) <= 1:
+            return ""
+
+        return components[-1]
 
     def __eq__(self, o: "FilePath") -> bool:
         return self._path == o.path
@@ -89,12 +125,15 @@ class EvalVisitor(Visitor):
         for i in range(document.count()):
             document.get(i).accept(self)
 
+        for link in document.links:
+            command = InterpretFileCommand(link.path.value)
+            command.execute()
+
     def visit_code_block(self, code_block: CodeBlockNode) -> None:
         operator = code_block.operator
 
         if operator.operator == ">":
             command = CopyToFileCommand(code_block)
-
             command.execute()
 
     def visit_unary_operator(self, _) -> None:
@@ -141,7 +180,7 @@ class FileInterpreter(Interpreter):
     _parser: Parser
 
     def __init__(self, path: str, format="plaintext"):
-        if not format in ["plaintext"]:
+        if format not in ["plaintext"]:
             raise ValueError("Format {} is not supported".format(format))
 
         self._path = path

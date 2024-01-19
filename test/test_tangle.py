@@ -1,6 +1,7 @@
 import os
 from unittest.mock import MagicMock, mock_open, patch
 import pytest
+import tempfile
 
 from tangle.parser import (
     CodeBlockNode,
@@ -8,6 +9,7 @@ from tangle.parser import (
     StringParser,
     TextNode,
     UnaryOperatorNode,
+    LinkNode,
 )
 from tangle.tangle import (
     BaseInterpreter,
@@ -32,36 +34,46 @@ def test_write_to_file():
 
 
 class TestEvalVisitor:
-    @pytest.fixture
-    def document(self):
+    def create_document(self, dir):
         return DocumentNode(
             [
                 CodeBlockNode(
                     TextNode("ruby"),
-                    TextNode("content\ncontent\ncontent"),
-                    UnaryOperatorNode(">", TextNode("~/randomfile.txt")),
+                    TextNode("puts 'Hello World'"),
+                    UnaryOperatorNode(
+                        ">", TextNode(os.path.join(dir, "randomfile.rb"))
+                    ),
                 )
-            ]
+            ],
+            [
+                LinkNode(
+                    text=TextNode("link"),
+                    path=TextNode(os.path.join(dir, "randomfile.md")),
+                )
+            ],
         )
 
-    def test_visit_document(self, document):
+    def create_randomfile_content(self, dir):
+        content = "```ruby > {}/randomfile2.rb\nputs 'Hello World'\n```"
+
+        return content.format(dir)
+
+    def test_visit_document(self):
         visitor = EvalVisitor()
 
-        for i in range(document.count()):
-            document.get(i).accept = MagicMock()
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            document = self.create_document(tmpdirname)
 
-        document.accept(visitor)
+            with open(os.path.join(tmpdirname, "randomfile.md"), "w+") as f:
+                f.write(self.create_randomfile_content(tmpdirname))
 
-        for i in range(document.count()):
-            assert document.get(i).accept.called
+            visitor.visit_document(document)
 
-    def test_visit_code_block(self, document):
-        visitor = EvalVisitor()
+            with open(os.path.join(tmpdirname, "randomfile.rb"), "r") as f:
+                assert f.read() == "puts 'Hello World'"
 
-        with patch("builtins.open", new_callable=mock_open()) as m:
-            document.get(0).accept(visitor)
-
-            m.assert_called_with(os.path.expanduser("~/randomfile.txt"), "w+")
+            with open(os.path.join(tmpdirname, "randomfile2.rb"), "r") as f:
+                assert f.read() == "puts 'Hello World'\n"
 
 
 class TestFilePath:

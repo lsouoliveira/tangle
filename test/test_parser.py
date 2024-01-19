@@ -7,6 +7,7 @@ from tangle.parser import (
     DocumentNode,
     StringParser,
     TextNode,
+    LinkNode,
 )
 
 
@@ -30,6 +31,12 @@ def test_code_block_node():
     ).node_type()
 
     assert node == AstNodeType.CODE_BLOCK
+
+
+def test_link_node():
+    node = LinkNode(TextNode(), TextNode()).node_type()
+
+    assert node == AstNodeType.LINK
 
 
 class TestStringParser:
@@ -112,3 +119,25 @@ class TestStringParser:
             node = parser.parse()
 
             assert node.count() == 0
+
+    def test_parse_links(self):
+        parser = StringParser("[link](https://example.com)")
+
+        node = parser.parse()
+
+        assert len(node.links) == 1
+
+        link = cast(LinkNode, node.links[0])
+        link_text = cast(TextNode, link.text)
+        link_href = cast(TextNode, link.path)
+
+        assert link.node_type() == AstNodeType.LINK
+        assert link_text.value == "link"
+        assert link_href.value == "https://example.com"
+
+    def test_parse_invalid_link(self):
+        parser = StringParser("[link](https://example.com")
+
+        node = parser.parse()
+
+        assert len(node.links) == 0
