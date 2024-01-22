@@ -31,29 +31,22 @@ class Command(abc.ABC):
 
 
 class CopyToFileCommand(Command):
-    _code_block: CodeBlockNode
+    _file_path: FilePath
+    _content: str
 
-    def __init__(self, code_block: CodeBlockNode):
-        self._code_block = code_block
+    def __init__(self, file_path: FilePath, content: str):
+        self._file_path = file_path
+        self._content = content
 
     def execute(self) -> None:
-        write_to_file(self.__content(), self.__file_path())
-
-    def __file_path(self) -> str:
-        operator = self._code_block.operator
-        operand = cast(TextNode, operator.operand)
-
-        return operand.value
-
-    def __content(self) -> str:
-        return self._code_block.content.value
+        write_to_file(self._content, self._file_path.expanded())
 
 
 class InterpretFileCommand(Command):
     file_path: FilePath
 
-    def __init__(self, file_path: str):
-        self.file_path = FilePath(file_path)
+    def __init__(self, file_path: FilePath):
+        self.file_path = file_path
 
     def execute(self) -> None:
         if not self.file_path.file_or_dir_exists():
@@ -93,6 +86,9 @@ class FilePath:
     def isfile(self) -> bool:
         return os.path.isfile(self.expanded())
 
+    def isabs(self) -> bool:
+        return os.path.isabs(self.expanded())
+
     def expanded(self) -> str:
         return os.path.expanduser(self._path)
 
@@ -121,19 +117,28 @@ class FilePath:
 
 
 class EvalVisitor(Visitor):
+    def __init__(self, root_path: FilePath):
+        self._root_path = root_path
+
     def visit_document(self, document: DocumentNode) -> None:
         for i in range(document.count()):
             document.get(i).accept(self)
 
         for link in document.links:
-            command = InterpretFileCommand(link.path.value)
+            file_path = self._file_path(link.path.value)
+
+            command = InterpretFileCommand(file_path)
             command.execute()
 
     def visit_code_block(self, code_block: CodeBlockNode) -> None:
         operator = code_block.operator
 
         if operator.operator == ">":
-            command = CopyToFileCommand(code_block)
+            text_node = cast(TextNode, operator.operand)
+            file_path = self._file_path(text_node.value)
+            content = code_block.content.value
+
+            command = CopyToFileCommand(file_path, content)
             command.execute()
 
     def visit_unary_operator(self, _) -> None:
@@ -141,6 +146,12 @@ class EvalVisitor(Visitor):
 
     def visit_text(self, _) -> None:
         pass
+
+    def _file_path(self, path: str) -> FilePath:
+        if os.path.isabs(path):
+            return FilePath(path)
+
+        return FilePath(os.path.join(self._root_path.dirname(), path))
 
 
 class Interpreter(abc.ABC):
@@ -175,7 +186,7 @@ class BaseInterpreter(Interpreter):
 
 
 class FileInterpreter(Interpreter):
-    _path: str
+    _path: FilePath
     _format: str
     _parser: Parser
 
@@ -183,16 +194,16 @@ class FileInterpreter(Interpreter):
         if format not in ["plaintext"]:
             raise ValueError("Format {} is not supported".format(format))
 
-        self._path = path
+        self._path = FilePath(path)
         self._format = format
 
     def __create_parser(self):
         if self._format == "plaintext":
-            with open(self._path, "r") as f:
+            with open(self._path.expanded(), "r") as f:
                 self._parser = StringParser(f.read())
 
     def __evaluate(self) -> None:
-        base_interpreter = BaseInterpreter(self._parser, EvalVisitor())
+        base_interpreter = BaseInterpreter(self._parser, EvalVisitor(self._path))
 
         base_interpreter.eval()
 

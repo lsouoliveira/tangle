@@ -1,8 +1,6 @@
 from argparse import Namespace
-from os.path import samefile
 from unittest.mock import patch
 from tempfile import NamedTemporaryFile
-import pytest
 
 from tangle.cli import Cli
 

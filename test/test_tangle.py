@@ -20,6 +20,36 @@ from tangle.tangle import (
 )
 
 
+def create_document(dir):
+    return DocumentNode(
+        [
+            CodeBlockNode(
+                TextNode("ruby"),
+                TextNode("puts 'Hello World'"),
+                UnaryOperatorNode(">", TextNode(os.path.join(dir, "randomfile.rb"))),
+            )
+        ],
+        [
+            LinkNode(
+                text=TextNode("link"),
+                path=TextNode(os.path.join(dir, "randomfile.md")),
+            )
+        ],
+    )
+
+
+def create_randomfile_content(dir, filename="randomfile.rb"):
+    content = "```ruby > {}/{}\nputs 'Hello World'\n```"
+
+    return content.format(dir, filename)
+
+
+def create_randomfile_content_with_link(dir):
+    content = "- [randomfile2](randomfile2.md)\n```ruby > {}/randomfile.rb\nputs 'Hello World'\n```"
+
+    return content.format(dir)
+
+
 def test_write_to_file():
     path = os.path.expanduser("~/randomfile.txt")
     dirname = os.path.dirname(path)
@@ -34,38 +64,29 @@ def test_write_to_file():
 
 
 class TestEvalVisitor:
-    def create_document(self, dir):
-        return DocumentNode(
-            [
-                CodeBlockNode(
-                    TextNode("ruby"),
-                    TextNode("puts 'Hello World'"),
-                    UnaryOperatorNode(
-                        ">", TextNode(os.path.join(dir, "randomfile.rb"))
-                    ),
-                )
-            ],
-            [
-                LinkNode(
-                    text=TextNode("link"),
-                    path=TextNode(os.path.join(dir, "randomfile.md")),
-                )
-            ],
-        )
-
-    def create_randomfile_content(self, dir):
-        content = "```ruby > {}/randomfile2.rb\nputs 'Hello World'\n```"
-
-        return content.format(dir)
-
     def test_visit_document(self):
-        visitor = EvalVisitor()
-
         with tempfile.TemporaryDirectory() as tmpdirname:
-            document = self.create_document(tmpdirname)
+            visitor = EvalVisitor(FilePath(os.path.join(tmpdirname, "randomfile.md")))
+            document = create_document(tmpdirname)
 
             with open(os.path.join(tmpdirname, "randomfile.md"), "w+") as f:
-                f.write(self.create_randomfile_content(tmpdirname))
+                f.write(create_randomfile_content(tmpdirname, "randomfile2.rb"))
+
+            visitor.visit_document(document)
+
+            with open(os.path.join(tmpdirname, "randomfile.rb"), "r") as f:
+                assert f.read() == "puts 'Hello World'"
+
+            with open(os.path.join(tmpdirname, "randomfile2.rb"), "r") as f:
+                assert f.read() == "puts 'Hello World'\n"
+
+    def test_visit_document_with_relative_path(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            visitor = EvalVisitor(FilePath(os.path.join(tmpdirname, "randomfile.md")))
+            document = create_document("")
+
+            with open(os.path.join(tmpdirname, "randomfile.md"), "w+") as f:
+                f.write(create_randomfile_content(tmpdirname, "randomfile2.rb"))
 
             visitor.visit_document(document)
 
@@ -103,7 +124,7 @@ class TestFilePath:
 class TestBaseInterpreter:
     def test_eval(self):
         parser = StringParser("")
-        visitor = EvalVisitor()
+        visitor = EvalVisitor(FilePath("~/randomfile"))
         document = DocumentNode()
 
         parser.parse = MagicMock(return_value=document)
@@ -118,14 +139,22 @@ class TestBaseInterpreter:
 
 
 class TestFileInterpreter:
-    @patch("tangle.tangle.BaseInterpreter")
-    def test_eval(self, base_interpreter_stub):
-        with patch("builtins.open", new_callable=mock_open()) as m:
-            interpreter = FileInterpreter("~/.randomfile")
+    def test_eval(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            interpreter = FileInterpreter(
+                os.path.join(tmpdirname, "randomfile.md"),
+            )
 
-            base_interpreter_stub.eval = MagicMock()
+            with open(os.path.join(tmpdirname, "randomfile.md"), "w+") as f:
+                f.write(create_randomfile_content_with_link(tmpdirname))
+
+            with open(os.path.join(tmpdirname, "randomfile2.md"), "w+") as f:
+                f.write(create_randomfile_content(tmpdirname, "randomfile2.rb"))
 
             interpreter.eval()
 
-            m.assert_called_with("~/.randomfile", "r")
-            base_interpreter_stub.assert_called
+            with open(os.path.join(tmpdirname, "randomfile.rb"), "r") as f:
+                assert f.read() == "puts 'Hello World'\n"
+
+            with open(os.path.join(tmpdirname, "randomfile2.rb"), "r") as f:
+                assert f.read() == "puts 'Hello World'\n"
