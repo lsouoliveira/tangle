@@ -125,7 +125,7 @@ class EvalVisitor(Visitor):
             document.get(i).accept(self)
 
         for link in document.links:
-            file_path = self._file_path(link.path.value)
+            file_path = self._file_path(FilePath(link.path.value))
 
             command = InterpretFileCommand(file_path)
             command.execute()
@@ -135,7 +135,7 @@ class EvalVisitor(Visitor):
 
         if operator.operator == ">":
             text_node = cast(TextNode, operator.operand)
-            file_path = self._file_path(text_node.value)
+            file_path = self._file_path(FilePath(text_node.value))
             content = code_block.content.value
 
             command = CopyToFileCommand(file_path, content)
@@ -147,11 +147,11 @@ class EvalVisitor(Visitor):
     def visit_text(self, _) -> None:
         pass
 
-    def _file_path(self, path: str) -> FilePath:
-        if os.path.isabs(path):
-            return FilePath(path)
+    def _file_path(self, path: FilePath) -> FilePath:
+        if path.isabs():
+            return path
 
-        return FilePath(os.path.join(self._root_path.dirname(), path))
+        return FilePath(os.path.join(self._root_path.dirname(), path.expanded()))
 
 
 class Interpreter(abc.ABC):
