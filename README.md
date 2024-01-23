@@ -18,7 +18,16 @@ pip3 install .
 ## Usage
 
 ```bash
-tangle <file>
+usage: tangle [options] <file>
+
+Copies markdown code blocks with the correct header syntax to target files.
+
+positional arguments:
+  file        a markdown file
+
+options:
+  -h, --help  show this help message and exit
+  --version   show program's version number and exit
 ```
 
 ## Example
